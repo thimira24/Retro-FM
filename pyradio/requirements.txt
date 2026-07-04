@@ -1,3 +1,0 @@
-colorama
-python-vlc
-requests
