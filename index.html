@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Retro FM — Sri Lanka</title>
+<style>
+  :root{
+    --wood-1:#6b4630; --wood-2:#57371f; --wood-3:#3f2515; --wood-hole:#160c05;
+    --panel-1:#f0b878; --panel-2:#e29a4f; --panel-3:#c67d34; --panel-edge:#a5631f;
+    --cream-1:#fbf7ec; --cream-2:#efe6cf; --cream-3:#d8c9a4; --cream-4:#b7a67d;
+    --knob-1:#4a4a4f; --knob-2:#2c2c30; --knob-3:#161618;
+    --red:#e6382b; --red-glow:#ff5a44;
+    --amber:#ffb347; --amber-hot:#ffd58a;
+    --page-1:#e9e6df; --page-2:#c9c4b8;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    margin:0; font-family:"Helvetica Neue",Arial,sans-serif;
+    background:radial-gradient(120% 120% at 50% 0%, #f4f1ea 0%, var(--page-1) 40%, var(--page-2) 100%);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    min-height:100vh; padding:40px 16px; color:#2a1c10; overflow-x:hidden;
+  }
+
+  /* ============ DEVICE ============ */
+  .stage{ perspective:1400px; }
+  .radio{
+    position:relative;
+    width:600px; max-width:94vw; aspect-ratio:600/470;
+    border-radius:46px;
+    display:grid; grid-template-columns:1.15fr 1fr;
+    padding:22px;
+    background:linear-gradient(150deg,#f3c98d 0%,#e7a860 46%,#d68f42 47%,#b9752d 100%);
+    box-shadow:
+      /* symmetric molded bezel — top and bottom match */
+      0 3px 1px rgba(255,255,255,.6) inset,
+      0 -9px 10px -4px rgba(255,236,205,.4) inset,
+      0 -20px 30px rgba(120,60,10,.12) inset,
+      0 2px 0 rgba(255,255,255,.45),
+      0 -2px 0 rgba(150,92,32,.35),
+      /* soft grounded drop shadow */
+      0 44px 50px -12px rgba(80,48,12,.4),
+      0 88px 104px -34px rgba(80,48,12,.34);
+    transform:none;
+    margin-bottom:30px;
+    transition:transform .6s cubic-bezier(.2,.8,.2,1);
+  }
+  .radio::after{
+    content:""; position:absolute; inset:0; border-radius:46px; pointer-events:none;
+    background:
+      radial-gradient(140% 90% at 20% -10%, rgba(255,255,255,.35), transparent 45%),
+      radial-gradient(120% 120% at 120% 120%, rgba(90,45,10,.35), transparent 50%);
+    mix-blend-mode:soft-light;
+  }
+  .radio::before{
+    content:""; position:absolute; top:5px; left:26px; right:26px; height:15px;
+    border-radius:22px; z-index:0; pointer-events:none;
+    background:linear-gradient(#ffe6b0,#f3ba73);
+    box-shadow:0 1px 1px rgba(255,255,255,.6);
+    -webkit-mask:linear-gradient(#000,rgba(0,0,0,.05)); mask:linear-gradient(#000,rgba(0,0,0,.05));
+  }
+  .radio .lip{
+    position:absolute; bottom:5px; left:26px; right:26px; height:15px;
+    border-radius:22px; z-index:0; pointer-events:none;
+    background:linear-gradient(#eaa858,#c67e33);
+    box-shadow:0 -1px 1px rgba(255,255,255,.35);
+    -webkit-mask:linear-gradient(rgba(0,0,0,.05),#000); mask:linear-gradient(rgba(0,0,0,.05),#000);
+  }
+
+  /* ---------- speaker grille ---------- */
+  .grille{
+    position:relative; border-radius:30px; margin-right:14px;
+    background:linear-gradient(145deg,var(--wood-1),var(--wood-2) 55%,var(--wood-3));
+    box-shadow:
+      0 2px 3px rgba(255,255,255,.18) inset,
+      0 -3px 10px rgba(0,0,0,.55) inset,
+      0 10px 22px rgba(0,0,0,.35) inset,
+      0 1px 0 rgba(255,220,180,.25);
+    overflow:hidden;
+  }
+  .holes{
+    position:absolute; inset:16px; border-radius:20px;
+    background-image:
+      radial-gradient(circle at 45% 42%, rgba(255,210,160,.10) 0 1.1px, transparent 1.6px),
+      radial-gradient(circle at 52% 60%, var(--wood-hole) 0 2.3px, transparent 3px);
+    background-size:20px 20px, 20px 20px;
+    box-shadow:0 0 30px rgba(0,0,0,.4) inset;
+    transition:filter .8s ease, opacity .8s ease; filter:brightness(.86) saturate(.9);
+  }
+  .radio.on .holes{ filter:brightness(1.06) saturate(1.05); }
+  .glow{
+    position:absolute; inset:0; border-radius:20px; opacity:0; pointer-events:none;
+    background:radial-gradient(60% 60% at 35% 45%, rgba(255,150,60,.28), transparent 70%);
+    transition:opacity .8s ease;
+  }
+  .radio.playing .glow{ opacity:1; animation:breathe 3.4s ease-in-out infinite; }
+  @keyframes breathe{ 0%,100%{opacity:.55} 50%{opacity:1} }
+
+  .plate{
+    position:absolute; left:18px; bottom:15px; z-index:4;
+    display:flex; align-items:center; gap:9px; padding:6px 12px 5px; border-radius:7px;
+    background:linear-gradient(155deg,#efd598 0%,#cba75f 42%,#a37c37 55%,#dcbc7c 100%);
+    box-shadow:
+      0 1px 1px rgba(255,255,255,.7) inset, 0 -2px 3px rgba(90,55,10,.5) inset,
+      0 2px 4px rgba(0,0,0,.45), 0 1px 0 rgba(255,255,255,.3);
+  }
+  .plate .txt{ font-size:12px; font-weight:800; letter-spacing:2.5px; color:#5a3a12;
+    text-shadow:0 1px 0 rgba(255,248,215,.65), 0 -1px 1px rgba(60,35,5,.55); }
+  .led{
+    width:11px; height:11px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #7a1a12, #3a0a06);
+    box-shadow:0 0 0 1px rgba(0,0,0,.4), 0 1px 1px rgba(255,255,255,.15) inset;
+    transition:all .4s ease;
+  }
+  .radio.on .led{
+    background:radial-gradient(circle at 35% 30%, var(--red-glow), var(--red) 60%, #7a140c);
+    box-shadow:0 0 10px var(--red-glow), 0 0 22px rgba(230,56,43,.7), 0 1px 1px rgba(255,255,255,.4) inset;
+    animation:pulse 2.2s ease-in-out infinite;
+  }
+  @keyframes pulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.35)}}
+
+  /* ---------- control panel ---------- */
+  .panel{
+    position:relative; border-radius:30px; padding:16px 14px 14px;
+    display:flex; flex-direction:column; align-items:center;
+    background:linear-gradient(160deg,var(--panel-1),var(--panel-2) 55%,var(--panel-3));
+    box-shadow:
+      0 2px 2px rgba(255,255,255,.5) inset, 0 -6px 16px rgba(120,60,10,.35) inset,
+      0 8px 18px rgba(90,45,10,.18);
+  }
+  .dial{ position:relative; width:190px; height:150px; margin-top:2px; }
+  .dial svg{ position:absolute; inset:0; width:100%; height:100%; overflow:visible; }
+  .ticknum{ font:800 9px "Helvetica Neue",Arial; fill:#7a4715; letter-spacing:2px;
+    filter:drop-shadow(0 1px 0 rgba(255,255,255,.4)); }
+  .fmlogo{ position:absolute; left:50%; bottom:-2px; transform:translateX(-50%);
+    font-weight:800; font-size:14px; color:var(--red); text-shadow:0 1px 0 rgba(255,255,255,.4); letter-spacing:1px; }
+  .marker{ fill:var(--red); filter:drop-shadow(0 1px 1px rgba(0,0,0,.35)); }
+
+  /* tuning wheel sits in a metal collar, centered over the dial (styled with .knob-sm below) */
+  .collar-tune{ position:absolute; left:50%; top:57%; transform:translate(-50%,-50%);
+    width:108px; height:108px; z-index:4; }
+
+  .screen{
+    width:196px; margin:12px 0 14px; padding:8px 12px; border-radius:10px; position:relative; overflow:hidden;
+    background:linear-gradient(#20140a,#2c1c0e);
+    box-shadow:0 2px 4px rgba(0,0,0,.6) inset, 0 -1px 2px rgba(120,70,20,.4) inset, 0 1px 0 rgba(255,220,170,.35);
+    color:#3a2a17; transition:color .5s ease; font-family:"Courier New",monospace;
+  }
+  .radio.on .screen{ color:var(--amber); }
+  .screen .stn{ font-size:15px; font-weight:700; letter-spacing:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    text-shadow:0 0 6px rgba(255,160,60,.0); transition:text-shadow .5s; }
+  .radio.on .screen .stn{ text-shadow:0 0 8px rgba(255,150,50,.7); }
+  .screen .row{ display:flex; justify-content:space-between; align-items:center; margin-top:3px; }
+  .screen .freq{ font-size:13px; font-weight:700; letter-spacing:1px; }
+  .screen .state{ font-size:9px; letter-spacing:2px; opacity:.85 }
+  .eq{ display:flex; gap:2px; align-items:flex-end; height:12px; }
+  .eq i{ width:3px; height:4px; background:currentColor; border-radius:1px; opacity:.5 }
+  .radio.playing .eq i{ opacity:.95 }
+  /* each bar moves independently with its own rhythm & height pattern */
+  .radio.playing .eq i:nth-child(1){ animation:eq1 .68s ease-in-out infinite; }
+  .radio.playing .eq i:nth-child(2){ animation:eq2 .91s ease-in-out infinite; }
+  .radio.playing .eq i:nth-child(3){ animation:eq3 .55s ease-in-out infinite; }
+  .radio.playing .eq i:nth-child(4){ animation:eq4 .82s ease-in-out infinite; }
+  .radio.playing .eq i:nth-child(5){ animation:eq5 .73s ease-in-out infinite; }
+  @keyframes eq1{ 0%{height:5px}22%{height:11px}45%{height:3px}68%{height:9px}100%{height:6px} }
+  @keyframes eq2{ 0%{height:9px}30%{height:4px}55%{height:12px}78%{height:6px}100%{height:8px} }
+  @keyframes eq3{ 0%{height:3px}25%{height:10px}50%{height:5px}80%{height:12px}100%{height:4px} }
+  @keyframes eq4{ 0%{height:11px}20%{height:5px}48%{height:9px}70%{height:3px}100%{height:10px} }
+  @keyframes eq5{ 0%{height:6px}28%{height:12px}52%{height:4px}75%{height:9px}100%{height:5px} }
+
+  .knobs{ display:flex; gap:30px; margin-top:6px; }
+  .kwrap{ display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .klabel{ font-size:9px; letter-spacing:2px; font-weight:800; color:#7a4715; text-shadow:0 1px 0 rgba(255,255,255,.4); }
+  .collar{
+    position:relative; width:76px; height:76px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(circle at 50% 34%, #eab979, #cf8f45 68%, #ab6a26 100%);
+    box-shadow:0 3px 7px rgba(90,45,10,.5) inset, 0 -2px 4px rgba(255,232,192,.55) inset, 0 1px 0 rgba(255,255,255,.4);
+  }
+  .collar::before{ content:""; position:absolute; inset:5px; border-radius:50%;
+    background:conic-gradient(from -40deg,#7f7f86,#e9e9ef,#787880,#dcdce3,#82828a,#ededf2,#7f7f86);
+    box-shadow:0 1px 2px rgba(0,0,0,.45) inset, 0 1px 1px rgba(255,255,255,.55); }
+  .collar::after{ content:""; position:absolute; inset:9px; border-radius:50%; background:#160f05; box-shadow:0 3px 6px rgba(0,0,0,.65) inset; }
+  .knob-sm{
+    position:relative; z-index:2; width:56px; height:56px; border-radius:50%; cursor:grab; touch-action:none;
+    background:radial-gradient(circle at 48% 26%, #66666e 0%, #3d3d43 44%, #232327 72%, #121214 100%);
+    box-shadow:0 2px 1px rgba(255,255,255,.2) inset, 0 -6px 10px rgba(0,0,0,.66) inset, 0 7px 11px -2px rgba(0,0,0,.6), 0 2px 3px rgba(0,0,0,.5);
+    transition:box-shadow .2s ease, transform .12s ease;
+  }
+  .knob-sm::before{ content:""; position:absolute; inset:0; border-radius:50%;
+    background:repeating-conic-gradient(from 0deg, rgba(255,255,255,.14) 0deg 2.4deg, rgba(0,0,0,.36) 2.4deg 4.8deg);
+    -webkit-mask:radial-gradient(circle, transparent 52%, #000 53% 91%, transparent 92%); mask:radial-gradient(circle, transparent 52%, #000 53% 91%, transparent 92%); }
+  .knob-sm::after{ content:""; position:absolute; inset:12px; border-radius:50%;
+    background:radial-gradient(circle at 40% 28%, #71717a 0%, #37373d 55%, #161619 100%);
+    box-shadow:0 2px 2px rgba(255,255,255,.16) inset, 0 -3px 6px rgba(0,0,0,.6) inset; }
+  .knob-sm .gloss{ position:absolute; top:9px; left:15px; width:20px; height:10px; border-radius:50%;
+    background:radial-gradient(circle, rgba(255,255,255,.55), transparent 70%); z-index:4; pointer-events:none; }
+  .knob-sm .ind{ position:absolute; left:50%; top:5px; width:3px; height:13px; transform:translateX(-50%); border-radius:2px; z-index:5;
+    background:linear-gradient(#f5e9c9,#c9b483); box-shadow:0 0 4px rgba(255,220,150,.5); }
+  .knob-sm:active{ cursor:grabbing; transform:scale(.97); }
+  .knob-sm.power .ind{ background:linear-gradient(#7a3b34,#4a201b); box-shadow:none; }
+  .radio.on .knob-sm.power .ind{ background:linear-gradient(var(--red-glow),var(--red)); box-shadow:0 0 8px var(--red-glow); }
+
+  /* the big tuning wheel = a larger knob-sm with a red pointer dot */
+  .knob-tune{ width:84px; height:84px; transition:box-shadow .2s ease; }
+  .knob-tune::after{ inset:17px; }
+  .knob-tune .gloss{ top:13px; left:22px; width:26px; height:13px; }
+  .knob-tune .dot{ position:absolute; left:50%; top:6px; transform:translateX(-50%);
+    width:10px; height:10px; border-radius:50%; z-index:5;
+    background:radial-gradient(circle at 35% 30%, var(--red-glow), var(--red) 62%, #8b1109);
+    box-shadow:0 0 6px rgba(230,56,43,.6), 0 1px 1px rgba(0,0,0,.45); }
+
+  .kwrap.pw{ position:relative; }
+  .pmark{ position:absolute; top:-1px; font-size:8px; font-weight:800; letter-spacing:.5px; color:#7a4715; text-shadow:0 1px 0 rgba(255,255,255,.5); pointer-events:none; }
+  .pmark.off{ left:6px; }
+  .pmark.on{ right:8px; color:#8a2f24; }
+  .radio.on .pmark.on{ color:var(--red); text-shadow:0 0 6px rgba(230,56,43,.55), 0 1px 0 rgba(255,255,255,.4); }
+
+  .controls{ margin-top:28px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center; }
+  .controls .lbl{ font:800 10px "Helvetica Neue",Arial; letter-spacing:2px; color:#7a4715; text-shadow:0 1px 0 rgba(255,255,255,.4); }
+  #country, #station{
+    appearance:none; -webkit-appearance:none;
+    font:700 12px "Helvetica Neue",Arial; color:#5a3a12; letter-spacing:.3px;
+    padding:8px 32px 8px 13px; border-radius:9px; border:1px solid rgba(120,70,20,.35);
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235a3a12'/%3E%3C/svg%3E"), linear-gradient(#f7dcae,#e6b46c);
+    background-repeat:no-repeat, no-repeat; background-position:right 12px center, center;
+    box-shadow:0 1px 0 rgba(255,255,255,.65) inset, 0 2px 3px rgba(90,45,10,.22); cursor:pointer; max-width:250px;
+  }
+  #country:hover, #station:hover{ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235a3a12'/%3E%3C/svg%3E"), linear-gradient(#fbe3ba,#ecbe78); }
+
+  .hint{ margin-top:20px; font-size:12.5px; color:#8a6a45; text-align:center; max-width:600px; line-height:1.6 }
+  .hint b{ color:#6b4416 }
+  audio{ display:none }
+
+  @media (max-width:520px){
+    .radio{ border-radius:38px; padding:16px }
+    .dial{ width:160px; height:128px } .collar-tune{ width:94px;height:94px } .knob-tune{ width:72px;height:72px }
+    .screen{ width:170px } .knobs{ gap:18px } .knob-sm{ width:52px;height:52px }
+  }
+  @media (prefers-reduced-motion:reduce){ *{animation:none!important; transition-duration:.01ms!important} }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="radio" id="radio">
+      <i class="lip"></i>
+      <div class="grille">
+        <div class="holes"></div>
+        <div class="glow"></div>
+        <div class="plate"><span class="led"></span><span class="txt">RETRO&nbsp;FM</span></div>
+      </div>
+
+      <div class="panel">
+        <div class="dial">
+          <svg id="dialsvg" viewBox="0 0 190 150" aria-hidden="true"></svg>
+          <div class="collar collar-tune">
+            <div class="knob-sm knob-tune" id="tune" role="slider" aria-label="Tuning"
+                 aria-valuemin="87" aria-valuemax="108" tabindex="0"><span class="gloss"></span><span class="dot"></span></div>
+          </div>
+          <div class="fmlogo">FM</div>
+        </div>
+
+        <div class="screen">
+          <div class="stn" id="stnName">— — —</div>
+          <div class="row">
+            <span class="freq" id="freq">88.8 MHz</span>
+            <span class="eq"><i></i><i></i><i></i><i></i><i></i></span>
+            <span class="state" id="state">OFF</span>
+          </div>
+        </div>
+
+        <div class="knobs">
+          <div class="kwrap">
+            <div class="collar">
+              <div class="knob-sm" id="vol" role="slider" aria-label="Volume"
+                   aria-valuemin="0" aria-valuemax="100" tabindex="0"><span class="gloss"></span><span class="ind"></span></div>
+            </div>
+            <span class="klabel">VOL</span>
+          </div>
+          <div class="kwrap pw">
+            <span class="pmark off">OFF</span>
+            <span class="pmark on">ON</span>
+            <div class="collar">
+              <div class="knob-sm power" id="power" role="switch" aria-label="Power" tabindex="0"><span class="gloss"></span><span class="ind"></span></div>
+            </div>
+            <span class="klabel">POWER</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <span class="lbl">COUNTRY</span>
+    <select id="country" aria-label="Select country">
+      <option value="LK">Sri Lanka</option>
+    </select>
+    <span class="lbl" id="stationLbl">STATION</span>
+    <select id="station" aria-label="Select station"></select>
+  </div>
+
+  <p class="hint">
+    Pick a <b>country</b>, then a station · twist <b>POWER</b> to switch on ·
+    turn the big <b>tuning</b> knob to change station · <b>VOL</b> for volume.
+  </p>
+
+  <audio id="player" crossorigin="anonymous"></audio>
+
+<script>
+(() => {
+  "use strict";
+
+  let STATIONS = [
+    {name:"Sirasa FM",   freq:88.8,  url:"http://live.trusl.com:1170/;"},
+    {name:"Sooriyan FM", freq:90.6,  url:"https://radio.lotustechnologieslk.net:8006/"},
+    {name:"Gold FM",     freq:93.0,  url:"https://radio.lotustechnologieslk.net:2020/stream/goldfmgarden"},
+    {name:"Hiru FM",     freq:96.1,  url:"https://radio.lotustechnologieslk.net:2020/stream/hirufmgarden/stream/1/"},
+    {name:"Sun FM",      freq:99.7,  url:"https://radio.lotustechnologieslk.net:2020/stream/sunfmgarden"},
+    {name:"Neth FM",     freq:105.0, url:"https://cp11.serverse.com/proxy/nethfm/stream"},
+    {name:"Sri FM",      freq:107.5, url:"http://207.148.74.192:7860/stream2.mp3"},
+  ];
+  const FMIN = 87, FMAX = 108;
+
+  const radio = document.getElementById("radio");
+  const player = document.getElementById("player");
+  const tune  = document.getElementById("tune");
+  const vol   = document.getElementById("vol");
+  const power = document.getElementById("power");
+  const stnName = document.getElementById("stnName");
+  const freqEl  = document.getElementById("freq");
+  const stateEl = document.getElementById("state");
+  const dialsvg = document.getElementById("dialsvg");
+
+  let on = false, idx = 0, volume = 0.8, lastTuneNs = -1, lastVolTickA = 0;
+
+  /* ---- synthesized UI sound effects (Web Audio API — no files) ---- */
+  let actx = null;
+  function ac(){
+    if(!actx){ const AC = window.AudioContext || window.webkitAudioContext; if(!AC) return null; actx = new AC(); }
+    if(actx.state === "suspended") actx.resume();
+    return actx;
+  }
+  function noiseBurst(dur, vol, freq, hp){
+    const c=ac(); if(!c) return; const t=c.currentTime;
+    const buf=c.createBuffer(1, Math.max(1, c.sampleRate*dur), c.sampleRate);
+    const d=buf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+    const n=c.createBufferSource(); n.buffer=buf;
+    const f=c.createBiquadFilter(); f.type=hp?"highpass":"lowpass"; f.frequency.value=freq;
+    const g=c.createGain(); g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    n.connect(f).connect(g).connect(c.destination); n.start(t); n.stop(t+dur);
+  }
+  function sweep(type,f0,f1,dur,vol){
+    const c=ac(); if(!c) return; const t=c.currentTime;
+    const o=c.createOscillator(), g=c.createGain(); o.type=type;
+    o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(f1,t+dur);
+    g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(vol,t+0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(g).connect(c.destination); o.start(t); o.stop(t+dur+0.02);
+  }
+  function sfxTick(){
+    const c=ac(); if(!c) return; const t=c.currentTime;
+    const o=c.createOscillator(), g=c.createGain(); o.type="square";
+    o.frequency.value=1400+Math.random()*400;
+    g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(0.08,t+0.001);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+0.03);
+    o.connect(g).connect(c.destination); o.start(t); o.stop(t+0.04);
+  }
+  function sfxPowerOn(){ sweep("sine",90,190,0.22,0.3); noiseBurst(0.05,0.12,3500,true); }
+  function sfxPowerOff(){ sweep("sine",190,70,0.28,0.28); noiseBurst(0.05,0.12,3500,true); }
+  function tickIfLive(){ if(actx && actx.state==="running") sfxTick(); }
+
+  /* dial */
+  const CX=95, CY=110, R=78;
+  const freqToAngle = f => 180 - ((f-FMIN)/(FMAX-FMIN))*180;
+  const polar = (ang,r=R)=>[CX + r*Math.cos(ang*Math.PI/180), CY - r*Math.sin(ang*Math.PI/180)];
+  function buildDial(){
+    let svg = "";
+    for(let f=FMIN; f<=FMAX; f+=1){
+      const a = freqToAngle(f), major = (f%3===0)||f===FMIN||f===FMAX;
+      const [x1,y1]=polar(a, R), [x2,y2]=polar(a, R-(major?11:6));
+      svg += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"
+              stroke="#6b3d12" stroke-width="${major?2:1}" stroke-linecap="round" opacity="${major?.9:.55}"/>`;
+    }
+    [[198,"87.0"],[-18,"108.0"]].forEach(([a,txt])=>{
+      const [x,y]=polar(a, 72);                     // lower corners of the arc, clear of the wheel
+      svg += `<text class="ticknum" x="${x.toFixed(1)}" y="${(y+3).toFixed(1)}" text-anchor="middle">${txt}</text>`;
+    });
+    const [mx,my]=polar(90, R+6);
+    svg += `<polygon class="marker" points="${mx-6},${my-2} ${mx+6},${my-2} ${mx},${my+7}"/>`;
+    dialsvg.innerHTML = svg;
+  }
+
+  function rotary(el, {min, max, get, set, onEnd}){
+    let dragging=false, startPtr=0, startVal=0;
+    const centre = () => { const r=el.getBoundingClientRect(); return {x:r.left+r.width/2, y:r.top+r.height/2}; };
+    const ptrAngle = e => { const c=centre(); return Math.atan2(e.clientY-c.y, e.clientX-c.x)*180/Math.PI; };
+    const norm = d => { while(d>180)d-=360; while(d<-180)d+=360; return d; };
+    const down = e => { dragging=true; startPtr=ptrAngle(e); startVal=get(); el.setPointerCapture?.(e.pointerId); e.preventDefault(); };
+    const move = e => { if(!dragging) return; let v = startVal + norm(ptrAngle(e)-startPtr); v = Math.max(min, Math.min(max, v)); set(v); };
+    const up = () => { if(!dragging) return; dragging=false; onEnd&&onEnd(get()); };
+    el.addEventListener("pointerdown", down);
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }
+
+  let tuneAngle = -90;
+  const angleToFreq = t => FMIN + ((t+90)/180)*(FMAX-FMIN);
+  function applyTuneAngle(t){
+    tuneAngle=t; tune.style.transform = `rotate(${t}deg)`;
+    const f = angleToFreq(t);
+    freqEl.textContent = f.toFixed(1)+" MHz";
+    tune.setAttribute("aria-valuenow", f.toFixed(1));
+  }
+  function nearestStation(f){ let best=0, d=1e9; STATIONS.forEach((s,i)=>{ const dd=Math.abs(s.freq-f); if(dd<d){d=dd;best=i;} }); return best; }
+  const freqToKnob = f => ((f-FMIN)/(FMAX-FMIN))*180 - 90;
+  function snapTo(i, {play=true}={}){
+    idx = i; const s = STATIONS[i];
+    tune.style.transition = "transform .5s cubic-bezier(.2,.8,.2,1)";
+    applyTuneAngle(freqToKnob(s.freq));
+    setTimeout(()=>tune.style.transition="", 520);
+    stnName.textContent = s.name;
+    freqEl.textContent = s.freq.toFixed(1)+" MHz";
+    lastTuneNs = i;
+    updatePresets();
+    tickIfLive();                 // click when selecting a station (silent until first interaction)
+    if(on && play) playCurrent();
+  }
+
+  const countrySel = document.getElementById("country");
+  const stationSel = document.getElementById("station");
+  const stationLbl = document.getElementById("stationLbl");
+  const API = "https://de1.api.radio-browser.info/json";
+
+  function buildStationSelect(){
+    stationSel.innerHTML = STATIONS.map((s,i)=>`<option value="${i}">${s.name}</option>`).join("");
+    stationSel.value = String(idx);
+    if(stationLbl) stationLbl.textContent = `STATION (${STATIONS.length})`;
+  }
+  stationSel.addEventListener("change", ()=>{
+    const i = +stationSel.value; if(Number.isNaN(i)) return;
+    if(!on) setPower(true, {play:false});
+    snapTo(i);
+  });
+
+  // fill the country dropdown from Radio Browser
+  async function loadCountries(){
+    try{
+      const r = await fetch(API + "/countries");
+      let list = (await r.json()).filter(c=>c.iso_3166_1 && c.stationcount>0)
+                                 .sort((a,b)=>a.name.localeCompare(b.name));
+      countrySel.innerHTML = list.map(c=>`<option value="${c.iso_3166_1}">${c.name} (${c.stationcount})</option>`).join("");
+      countrySel.value = "LK";
+    }catch(e){ /* offline — keep the single default option */ }
+  }
+
+  // load a country's stations into the dial + presets
+  async function loadStations(code){
+    try{
+      stateEl.textContent = "…";
+      const r = await fetch(`${API}/stations/bycountrycodeexact/${code}?hidebroken=true&order=clickcount&reverse=true&limit=30`);
+      let list = (await r.json()).filter(s=> s.url_resolved || s.url);
+      if(!list.length){ stateEl.textContent = on ? "NO SIGNAL" : "OFF"; return; }
+      const n = list.length;
+      STATIONS = list.map((s,i)=>({
+        name: (s.name||"Station").trim().replace(/\s+/g," ").slice(0,22),
+        freq: +(FMIN + (FMAX-FMIN)*(n===1?0.5:i/(n-1))).toFixed(1),
+        url:  s.url_resolved || s.url
+      }));
+      idx = 0; buildStationSelect(); snapTo(0, {play:on});
+      stnName.textContent = STATIONS[0].name;
+      if(!on) stateEl.textContent = "OFF";
+    }catch(e){ stateEl.textContent = on ? "NO SIGNAL" : "OFF"; }
+  }
+  countrySel.addEventListener("change", ()=> loadStations(countrySel.value));
+
+  // keep the STATION dropdown selection in sync with the current station
+  function updatePresets(){
+    if(stationSel && stationSel.value !== String(idx)) stationSel.value = String(idx);
+  }
+
+  rotary(tune, {
+    min:-90, max:90, get:()=>tuneAngle,
+    set:v=>{ tune.style.transition=""; applyTuneAngle(v);
+      const ns = nearestStation(angleToFreq(v));
+      stnName.textContent = STATIONS[ns].name;
+      if(ns !== lastTuneNs){ lastTuneNs = ns; sfxTick(); } },   // click at each station
+    onEnd:v=>{ snapTo(nearestStation(angleToFreq(v))); }
+  });
+
+  let volAngle = -135 + volume*270;
+  function applyVol(a){
+    volAngle=a; vol.style.transform=`rotate(${a}deg)`;
+    volume = (a+135)/270; player.volume = volume;
+    vol.setAttribute("aria-valuenow", Math.round(volume*100));
+  }
+  rotary(vol, { min:-135, max:135, get:()=>volAngle,
+    set:a=>{ applyVol(a); if(Math.abs(a-lastVolTickA)>=14){ lastVolTickA=a; sfxTick(); } } });
+
+  function setPower(state, {play=true}={}){
+    const was = on;
+    on = state;
+    power.style.transform = on ? "rotate(45deg)" : "rotate(0deg)";
+    radio.classList.toggle("on", on);
+    if(state && !was) sfxPowerOn();
+    else if(!state && was) sfxPowerOff();
+    if(on){ stateEl.textContent="ON"; if(play) playCurrent(); }
+    else { stateEl.textContent="OFF"; radio.classList.remove("playing"); player.pause(); }
+  }
+  power.addEventListener("click", ()=>setPower(!on));
+  power.addEventListener("keydown", e=>{ if(e.key===" "||e.key==="Enter"){e.preventDefault(); setPower(!on);} });
+
+  function playCurrent(){
+    const s = STATIONS[idx];
+    stnName.textContent = s.name;
+    stateEl.textContent = "TUNING";
+    radio.classList.remove("playing");
+    player.src = s.url; player.volume = volume;
+    const p = player.play();
+    if(p) p.catch(()=>{ stateEl.textContent="NO SIGNAL"; });
+  }
+  player.addEventListener("playing", ()=>{ if(on){ stateEl.textContent="LIVE"; radio.classList.add("playing"); }});
+  player.addEventListener("waiting", ()=>{ if(on) stateEl.textContent="TUNING"; });
+  player.addEventListener("error",   ()=>{ if(on){ stateEl.textContent="NO SIGNAL"; radio.classList.remove("playing"); }});
+  player.addEventListener("stalled", ()=>{ if(on) stateEl.textContent="…"; });
+
+  tune.addEventListener("keydown", e=>{
+    if(e.key==="ArrowRight"||e.key==="ArrowUp"){ e.preventDefault(); snapTo(Math.min(idx+1,STATIONS.length-1)); }
+    if(e.key==="ArrowLeft" ||e.key==="ArrowDown"){ e.preventDefault(); snapTo(Math.max(idx-1,0)); }
+  });
+
+  function init(){
+    buildDial();
+    buildStationSelect();
+    applyVol(volAngle);
+    snapTo(0, {play:false});
+    stnName.textContent = STATIONS[0].name;
+    stateEl.textContent = "OFF";
+  }
+  init();
+  loadCountries();   // populate the country dropdown (curated Sri Lanka list shows immediately)
+})();
+</script>
+</body>
+</html>
