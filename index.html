@@ -107,6 +107,7 @@
   }
   .plate .txt{ font-size:12px; font-weight:800; letter-spacing:2.5px; color:#5a3a12;
     text-shadow:0 1px 0 rgba(255,248,215,.65), 0 -1px 1px rgba(60,35,5,.55); }
+  .plate-m{ display:none; }   /* mobile-only RETRO FM header (shown at small widths) */
   .led{
     width:11px; height:11px; border-radius:50%;
     background:radial-gradient(circle at 35% 30%, #7a1a12, #3a0a06);
@@ -233,15 +234,21 @@
   .hint b{ color:#6b4416 }
   audio{ display:none }
 
-  /* ---- responsive: scale the fixed-size radio down to fit the screen ---- */
-  /* the radio is a detailed 600px design; `zoom` shrinks it (and its layout box)
-     as one piece, while the controls below stay full-size and tappable. */
-  @media (max-width:660px){ .stage{ zoom:0.86; } body{ padding:24px 12px; } }
-  @media (max-width:540px){ .stage{ zoom:0.72; } }
-  @media (max-width:440px){ .stage{ zoom:0.60; } }
-  @media (max-width:360px){ .stage{ zoom:0.52; } }
-  @media (max-width:660px){
-    #country, #station{ max-width:min(250px, 78vw); }
+  /* ---- responsive ---- */
+  /* small tablets / large phones: scale the full two-column radio to fit */
+  @media (max-width:660px) and (min-width:621px){ .stage{ zoom:0.9; } body{ padding:24px 12px; } }
+
+  /* phones: hide the speaker grille, show a compact single-column panel radio
+     with a RETRO FM header badge (the grille badge is hidden with the grille). */
+  @media (max-width:620px){
+    body{ padding:20px 12px; }
+    .radio{ width:min(360px, 92vw); aspect-ratio:auto; grid-template-columns:1fr; padding:16px; border-radius:34px; }
+    .grille{ display:none; }
+    .plate.plate-m{ display:flex; position:static; left:auto; bottom:auto; margin:2px auto 12px; }
+    .panel{ padding:14px 14px 16px; }
+    .tuner{ width:100%; max-width:230px; }
+    .screen{ width:100%; max-width:210px; }
+    #country, #station{ max-width:min(260px, 82vw); }
     .controls{ margin-top:22px; gap:8px; }
     .hint{ font-size:12px; }
   }
@@ -259,6 +266,7 @@
       </div>
 
       <div class="panel">
+        <div class="plate plate-m"><span class="led"></span><span class="txt">RETRO&nbsp;FM</span></div>
         <div class="tuner">
           <div class="scale" id="track" role="slider" aria-label="Tuning"
                aria-valuemin="87" aria-valuemax="108" tabindex="0">
