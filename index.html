@@ -172,13 +172,26 @@
       position: absolute;
       inset: 16px;
       border-radius: 20px;
-      background-image:
-        radial-gradient(circle at 45% 42%, rgba(255, 210, 160, .10) 0 1.1px, transparent 1.6px),
-        radial-gradient(circle at 52% 60%, var(--wood-hole) 0 2.3px, transparent 3px);
-      background-size: 20px 20px, 20px 20px;
-      box-shadow: 0 0 30px rgba(0, 0, 0, .4) inset;
+      /* realistic drilled perforations (canvas texture) + ambient-occlusion vignette */
+      background-image: var(--holetex, none),
+        radial-gradient(74% 80% at 50% 40%, transparent 46%, rgba(0, 0, 0, .5) 100%);
+      background-repeat: repeat, no-repeat;
+      background-size: 20px 20px, 100% 100%;
+      box-shadow: 0 0 34px rgba(0, 0, 0, .45) inset;
       transition: filter .8s ease, opacity .8s ease;
-      filter: brightness(.86) saturate(.9);
+      filter: brightness(.9) saturate(.95);
+    }
+
+    .holes::after {
+      /* fine material grain */
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      opacity: .07;
+      mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     }
 
     .radio.on .holes {
@@ -892,7 +905,7 @@
 
       .holes {
         inset: 9px;
-        background-size: 16px 16px;
+        background-size: 14px 14px, 100% 100%;
       }
 
       .glow {
@@ -1298,7 +1311,32 @@
       player.addEventListener("error", () => { if (on) { stateEl.textContent = "NO SIGNAL"; radio.classList.remove("playing"); } });
       player.addEventListener("stalled", () => { if (on) stateEl.textContent = "…"; });
 
+      /* ---- realistic speaker-grille texture: one drilled hole, tiled ---- */
+      function buildGrille() {
+        const S = 20, R = 3.7, s = 2;                 // cell size, hole radius, 2x for crispness
+        const W = S * s, H = S * s, cx = W / 2, cy = H / 2, r = R * s;
+        const c = document.createElement("canvas"); c.width = W; c.height = H;
+        const g = c.getContext("2d");
+        // hole body — darkest toward the top; light pools at the bottom of the bore
+        const rg = g.createRadialGradient(cx, cy - r * 0.35, r * 0.1, cx, cy + r * 0.15, r);
+        rg.addColorStop(0, "rgba(6,3,1,1)");
+        rg.addColorStop(0.55, "rgba(18,9,4,1)");
+        rg.addColorStop(1, "rgba(30,16,7,0)");        // fade into the material at the rim
+        g.fillStyle = rg; g.beginPath(); g.arc(cx, cy, r, 0, 7); g.fill();
+        // top-inner rim in shadow (light from above)
+        g.lineWidth = 1.4 * s; g.strokeStyle = "rgba(0,0,0,.65)";
+        g.beginPath(); g.arc(cx, cy, r - 0.7 * s, Math.PI * 1.06, Math.PI * 1.94); g.stroke();
+        // bottom-inner reflected-light crescent (warm)
+        g.lineWidth = 1.1 * s; g.strokeStyle = "rgba(255,188,120,.42)";
+        g.beginPath(); g.arc(cx, cy, r - 1.2 * s, Math.PI * 0.12, Math.PI * 0.88); g.stroke();
+        // faint lit lip on the lower outer edge (surface curving into the hole)
+        g.lineWidth = 1 * s; g.strokeStyle = "rgba(255,205,150,.13)";
+        g.beginPath(); g.arc(cx, cy, r + 0.4 * s, Math.PI * 0.22, Math.PI * 0.78); g.stroke();
+        document.documentElement.style.setProperty("--holetex", `url(${c.toDataURL()})`);
+      }
+
       function init() {
+        buildGrille();
         buildScale();
         buildStationSelect();
         vol.value = Math.round(volume * 100);
