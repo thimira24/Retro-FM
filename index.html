@@ -182,7 +182,7 @@
   .kwrap{ display:flex; flex-direction:column; align-items:center; gap:8px; }
   .klabel{ font-size:9px; letter-spacing:2px; font-weight:800; color:#7a4715; text-shadow:0 1px 0 rgba(255,255,255,.4); }
   .collar{
-    position:relative; width:76px; height:76px; border-radius:50%;
+    position:relative; width:90px; height:90px; border-radius:50%;
     display:flex; align-items:center; justify-content:center;
     background:radial-gradient(circle at 50% 34%, #eab979, #cf8f45 68%, #ab6a26 100%);
     box-shadow:0 3px 7px rgba(90,45,10,.5) inset, 0 -2px 4px rgba(255,232,192,.55) inset, 0 1px 0 rgba(255,255,255,.4);
@@ -190,27 +190,8 @@
   .collar::before{ content:""; position:absolute; inset:5px; border-radius:50%;
     background:conic-gradient(from -40deg,#7f7f86,#e9e9ef,#787880,#dcdce3,#82828a,#ededf2,#7f7f86);
     box-shadow:0 1px 2px rgba(0,0,0,.45) inset, 0 1px 1px rgba(255,255,255,.55); }
-  .collar::after{ content:""; position:absolute; inset:9px; border-radius:50%; background:#160f05; box-shadow:0 3px 6px rgba(0,0,0,.65) inset; }
-  .knob-sm{
-    position:relative; z-index:2; width:56px; height:56px; border-radius:50%; cursor:grab; touch-action:none;
-    background:radial-gradient(circle at 48% 26%, #66666e 0%, #3d3d43 44%, #232327 72%, #121214 100%);
-    box-shadow:0 2px 1px rgba(255,255,255,.2) inset, 0 -6px 10px rgba(0,0,0,.66) inset, 0 7px 11px -2px rgba(0,0,0,.6), 0 2px 3px rgba(0,0,0,.5);
-    transition:box-shadow .2s ease, transform .12s ease;
-  }
-  .knob-sm::before{ content:""; position:absolute; inset:0; border-radius:50%;
-    background:repeating-conic-gradient(from 0deg, rgba(255,255,255,.14) 0deg 2.4deg, rgba(0,0,0,.36) 2.4deg 4.8deg);
-    -webkit-mask:radial-gradient(circle, transparent 52%, #000 53% 91%, transparent 92%); mask:radial-gradient(circle, transparent 52%, #000 53% 91%, transparent 92%); }
-  .knob-sm::after{ content:""; position:absolute; inset:12px; border-radius:50%;
-    background:radial-gradient(circle at 40% 28%, #71717a 0%, #37373d 55%, #161619 100%);
-    box-shadow:0 2px 2px rgba(255,255,255,.16) inset, 0 -3px 6px rgba(0,0,0,.6) inset; }
-  .knob-sm .gloss{ position:absolute; top:9px; left:15px; width:20px; height:10px; border-radius:50%;
-    background:radial-gradient(circle, rgba(255,255,255,.55), transparent 70%); z-index:4; pointer-events:none; }
-  .knob-sm .ind{ position:absolute; left:50%; top:5px; width:3px; height:13px; transform:translateX(-50%); border-radius:2px; z-index:5;
-    background:linear-gradient(#f5e9c9,#c9b483); box-shadow:0 0 4px rgba(255,220,150,.5); }
-  .knob-sm:active{ cursor:grabbing; transform:scale(.97); }
-  .knob-sm.power .ind{ background:linear-gradient(#7a3b34,#4a201b); box-shadow:none; }
-  .radio.on .knob-sm.power .ind{ background:linear-gradient(var(--red-glow),var(--red)); box-shadow:0 0 8px var(--red-glow); }
-
+  /* no ::after black disc — the webaudio components handle their own backgrounds */
+  webaudio-knob, webaudio-switch { position:relative; z-index:2; display:block; }
 
   .kwrap.pw{ position:relative; }
   .pmark{ position:absolute; top:-1px; font-size:8px; font-weight:800; letter-spacing:.5px; color:#7a4715; text-shadow:0 1px 0 rgba(255,255,255,.5); pointer-events:none; }
@@ -254,6 +235,7 @@
   }
   @media (prefers-reduced-motion:reduce){ *{animation:none!important; transition-duration:.01ms!important} }
 </style>
+<script src="webaudio-controls.js"></script>
 </head>
 <body>
   <div class="stage">
@@ -288,8 +270,8 @@
         <div class="knobs">
           <div class="kwrap">
             <div class="collar">
-              <div class="knob-sm" id="vol" role="slider" aria-label="Volume"
-                   aria-valuemin="0" aria-valuemax="100" tabindex="0"><span class="gloss"></span><span class="ind"></span></div>
+              <webaudio-knob id="vol" min="0" max="100" value="80" diameter="70"
+                             src="Vintage_Knob.png" sprites="100" tooltip="Volume: %d"></webaudio-knob>
             </div>
             <span class="klabel">VOL</span>
           </div>
@@ -297,7 +279,8 @@
             <span class="pmark off">OFF</span>
             <span class="pmark on">ON</span>
             <div class="collar">
-              <div class="knob-sm power" id="power" role="switch" aria-label="Power" tabindex="0"><span class="gloss"></span><span class="ind"></span></div>
+              <webaudio-switch id="power" type="toggle" src="redbutton128.png"
+                               diameter="70" value="0"></webaudio-switch>
             </div>
             <span class="klabel">POWER</span>
           </div>
@@ -346,7 +329,7 @@
   const freqEl  = document.getElementById("freq");
   const stateEl = document.getElementById("state");
 
-  let on = false, idx = 0, volume = 0.8, lastTuneNs = -1, lastVolTickA = 0;
+  let on = false, idx = 0, volume = 0.8, lastTuneNs = -1, lastVolValue = 80;
 
   /* ---- synthesized UI sound effects (Web Audio API — no files) ---- */
   let actx = null;
@@ -404,19 +387,6 @@
     needle.style.left = (xOf(f)/SW*100).toFixed(2)+"%";
     freqEl.textContent = f.toFixed(1)+" MHz";
     track.setAttribute("aria-valuenow", f.toFixed(1));
-  }
-
-  function rotary(el, {min, max, get, set, onEnd}){
-    let dragging=false, startPtr=0, startVal=0;
-    const centre = () => { const r=el.getBoundingClientRect(); return {x:r.left+r.width/2, y:r.top+r.height/2}; };
-    const ptrAngle = e => { const c=centre(); return Math.atan2(e.clientY-c.y, e.clientX-c.x)*180/Math.PI; };
-    const norm = d => { while(d>180)d-=360; while(d<-180)d+=360; return d; };
-    const down = e => { dragging=true; startPtr=ptrAngle(e); startVal=get(); el.setPointerCapture?.(e.pointerId); e.preventDefault(); };
-    const move = e => { if(!dragging) return; let v = startVal + norm(ptrAngle(e)-startPtr); v = Math.max(min, Math.min(max, v)); set(v); };
-    const up = () => { if(!dragging) return; dragging=false; onEnd&&onEnd(get()); };
-    el.addEventListener("pointerdown", down);
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
   }
 
   function nearestStation(f){ let best=0, d=1e9; STATIONS.forEach((s,i)=>{ const dd=Math.abs(s.freq-f); if(dd<d){d=dd;best=i;} }); return best; }
@@ -518,27 +488,32 @@
     if(stationSel && stationSel.value !== String(idx)) stationSel.value = String(idx);
   }
 
-  let volAngle = -135 + volume*270;
-  function applyVol(a){
-    volAngle=a; vol.style.transform=`rotate(${a}deg)`;
-    volume = (a+135)/270; player.volume = volume;
-    vol.setAttribute("aria-valuenow", Math.round(volume*100));
-  }
-  rotary(vol, { min:-135, max:135, get:()=>volAngle,
-    set:a=>{ applyVol(a); if(Math.abs(a-lastVolTickA)>=14){ lastVolTickA=a; sfxTick(); } } });
+  vol.addEventListener("input", (e) => {
+    volume = +e.target.value / 100;
+    player.volume = volume;
+    if (Math.abs(+e.target.value - lastVolValue) >= 5) {
+      lastVolValue = +e.target.value;
+      sfxTick();
+    }
+  });
 
   function setPower(state, {play=true}={}){
     const was = on;
     on = state;
-    power.style.transform = on ? "rotate(45deg)" : "rotate(0deg)";
+    power.value = on ? 1 : 0;
     radio.classList.toggle("on", on);
     if(state && !was) sfxPowerOn();
     else if(!state && was) sfxPowerOff();
     if(on){ stateEl.textContent="ON"; if(play) playCurrent(); }
     else { stateEl.textContent="OFF"; radio.classList.remove("playing"); player.pause(); }
   }
-  power.addEventListener("click", ()=>setPower(!on));
-  power.addEventListener("keydown", e=>{ if(e.key===" "||e.key==="Enter"){e.preventDefault(); setPower(!on);} });
+  /* webaudio-switch fires 'click' on toggle */
+  power.addEventListener("click", () => {
+    setPower(!on);
+  });
+  power.addEventListener("keydown", e => {
+    if(e.key==" "||e.key==="Enter"){ e.preventDefault(); setPower(!on); }
+  });
 
   function playCurrent(){
     const s = STATIONS[idx];
@@ -557,7 +532,7 @@
   function init(){
     buildScale();
     buildStationSelect();
-    applyVol(volAngle);
+    vol.value = Math.round(volume * 100);
     snapTo(0, {play:false});
     stnName.textContent = STATIONS[0].name;
     stateEl.textContent = "OFF";
