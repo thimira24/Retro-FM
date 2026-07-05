@@ -1,10 +1,12 @@
 # Retro FM — a skeuomorphic web radio 📻
 
 A single-file, dependency-free **internet radio player** styled as a photorealistic vintage FM receiver.
-Pick a country, spin the tuning wheel, and stream live radio from anywhere in the world — all rendered
+Pick a country, slide across the dial, and stream live radio from anywhere in the world — all rendered
 with hand-crafted CSS, a little SVG, and vanilla JavaScript.
 
 > Everything lives in one self-contained [`index.html`](index.html). No build step, no framework, no npm.
+
+![Retro FM — a vintage FM radio rendered in pure CSS](screenshot.png)
 
 ---
 
@@ -18,7 +20,7 @@ with hand-crafted CSS, a little SVG, and vanilla JavaScript.
 - **Country → Station pickers** — choose from **240+ countries** (with per-country station counts),
   then pick from that country's stations in a dropdown. Sri Lanka ships as the default curated list.
 - **Interactive controls**
-  - Drag the big **tuning wheel** to sweep across stations (the needle animates and snaps to the nearest one).
+  - Drag/tap the **tuning slider** (a slide-rule dial) to sweep across stations — the needle snaps to the nearest one.
   - Turn the **VOL** knob to set volume.
   - Twist **POWER** to switch on/off (the LCD lights up, the on-air LED glows).
 - **Motion & life** — animated dial needle, a "breathing" warm glow through the grille while playing,
@@ -52,7 +54,7 @@ station compatibility. The many `https` streams work everywhere.
 ## 🎛️ How to use
 
 1. **COUNTRY** dropdown → choose a country. Its stations load into the **STATION** dropdown and onto the dial.
-2. **STATION** dropdown (or the tuning wheel) → choose a station.
+2. **STATION** dropdown (or the tuning slider) → choose a station.
 3. Twist **POWER** to start playing. Use **VOL** to adjust the volume.
 
 ---
@@ -69,7 +71,7 @@ station compatibility. The many `https` streams work everywhere.
 | HTML5 `<audio>`  | Plays the actual stream                                                  |
 
 Because internet streams have no real broadcast frequency, each station is assigned an evenly-spaced
-position on the 87–108 MHz dial so the tuning wheel stays meaningful.
+position on the 87–108 MHz dial so the tuning slider stays meaningful.
 
 ---
 
