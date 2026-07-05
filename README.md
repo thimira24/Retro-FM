@@ -1,4 +1,4 @@
-# Retro FM — a skeuomorphic web radio 📻
+# Retro FM : a skeuomorphic web radio 📻
 
 A single-file, dependency-free **internet radio player** styled as a photorealistic vintage FM receiver.
 Pick a country, slide across the dial, and stream live radio from anywhere in the world — all rendered
