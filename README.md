@@ -51,6 +51,30 @@ station compatibility. The many `https` streams work everywhere.
 
 ---
 
+## 🌐 Hosting it
+
+| Host | Setup | Which stations play |
+|------|-------|---------------------|
+| **Local** (`http://`) | `python3 server.py` | **All** stations (http + https) |
+| **GitHub Pages** (`https://`) | push & enable Pages | **https-only** — the app auto-filters the list to playable streams |
+| **Vercel** (`https://`) | import the repo (zero config) | **All** stations — an edge proxy relays http streams over https |
+
+**Full station support on the web → deploy to Vercel.** This repo includes a tiny edge function at
+[`api/stream.js`](api/stream.js). When the site is served from a host that provides it (Vercel and
+similar), the app automatically routes `http://` streams through `/api/stream?url=…`, so the browser
+sees only `https` and plays them. On GitHub Pages (no server) the app falls back to https-only.
+
+```bash
+# one-time: import the GitHub repo at vercel.com → New Project → Deploy
+# (or from the repo:)
+npm i -g vercel && vercel
+```
+
+> Caveats: proxied audio flows through the edge function, so free-tier **bandwidth/duration limits**
+> apply, and a few Shoutcast/ICY streams may still not proxy cleanly. Most http stations will work.
+
+---
+
 ## 🎛️ How to use
 
 1. **COUNTRY** dropdown → choose a country. Its stations load into the **STATION** dropdown and onto the dial.

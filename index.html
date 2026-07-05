@@ -480,8 +480,14 @@
   }
 
   // when the page itself is served over https (e.g. GitHub Pages), browsers block
-  // http (mixed-content) audio, so we can only offer https streams there.
+  // http (mixed-content) audio. If a stream proxy is available (Vercel /api/stream)
+  // we route http streams through it; on GitHub Pages there's no proxy, so we can
+  // only offer https streams.
   const httpsPage = location.protocol === "https:";
+  const onGhPages = location.hostname.endsWith("github.io");
+  const useProxy  = httpsPage && !onGhPages;      // assume /api/stream exists (Vercel, etc.)
+  const streamSrc = url =>
+    (useProxy && /^http:/i.test(url)) ? "/api/stream?url=" + encodeURIComponent(url) : url;
 
   // load a country's stations into the dial + station list
   async function loadStations(code){
@@ -491,7 +497,7 @@
       let list = (await r.json())
         .map(s=>({ name:s.name, url:(s.url_resolved || s.url || "") }))
         .filter(s=> s.url);
-      if(httpsPage) list = list.filter(s=> /^https:/i.test(s.url));   // drop http-only (unplayable) streams
+      if(httpsPage && !useProxy) list = list.filter(s=> /^https:/i.test(s.url));   // no proxy → drop unplayable http streams
       list = list.slice(0, 30);
       if(!list.length){ stateEl.textContent = on ? "NO SIGNAL" : "OFF"; return; }
       const n = list.length;
@@ -539,7 +545,7 @@
     stnName.textContent = s.name;
     stateEl.textContent = "TUNING";
     radio.classList.remove("playing");
-    player.src = s.url; player.volume = volume;
+    player.src = streamSrc(s.url); player.volume = volume;
     const p = player.play();
     if(p) p.catch(()=>{ stateEl.textContent="NO SIGNAL"; });
   }
