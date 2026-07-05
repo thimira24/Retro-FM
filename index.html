@@ -20,7 +20,7 @@
     margin:0; font-family:"Helvetica Neue",Arial,sans-serif;
     background:radial-gradient(120% 120% at 50% 0%, #f4f1ea 0%, var(--page-1) 40%, var(--page-2) 100%);
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    min-height:100vh; padding:40px 16px; color:#2a1c10; overflow-x:hidden;
+    min-height:100vh; min-height:100dvh; padding:40px 16px; color:#2a1c10; overflow-x:hidden;
   }
 
   /* ============ DEVICE ============ */
@@ -241,7 +241,7 @@
   /* phones: hide the speaker grille, show a compact single-column panel radio
      with a RETRO FM header badge (the grille badge is hidden with the grille). */
   @media (max-width:620px){
-    body{ padding:20px 12px; }
+    body{ padding:9vh 12px 24px; }   /* centered, nudged a touch lower on tall phones */
     .radio{ width:min(360px, 92vw); aspect-ratio:auto; grid-template-columns:1fr; padding:16px; border-radius:34px; }
     .grille{ display:none; }
     .plate.plate-m{ display:flex; position:static; left:auto; bottom:auto; margin:2px auto 12px; }
@@ -320,7 +320,7 @@
     turn the big <b>tuning</b> knob to change station · <b>VOL</b> for volume.
   </p>
 
-  <audio id="player" crossorigin="anonymous"></audio>
+  <audio id="player"></audio>
 
 <script>
 (() => {
@@ -479,18 +479,26 @@
     }catch(e){ /* offline — keep the single default option */ }
   }
 
-  // load a country's stations into the dial + presets
+  // when the page itself is served over https (e.g. GitHub Pages), browsers block
+  // http (mixed-content) audio, so we can only offer https streams there.
+  const httpsPage = location.protocol === "https:";
+
+  // load a country's stations into the dial + station list
   async function loadStations(code){
     try{
       stateEl.textContent = "…";
-      const r = await fetch(`${API}/stations/bycountrycodeexact/${code}?hidebroken=true&order=clickcount&reverse=true&limit=30`);
-      let list = (await r.json()).filter(s=> s.url_resolved || s.url);
+      const r = await fetch(`${API}/stations/bycountrycodeexact/${code}?hidebroken=true&order=clickcount&reverse=true&limit=80`);
+      let list = (await r.json())
+        .map(s=>({ name:s.name, url:(s.url_resolved || s.url || "") }))
+        .filter(s=> s.url);
+      if(httpsPage) list = list.filter(s=> /^https:/i.test(s.url));   // drop http-only (unplayable) streams
+      list = list.slice(0, 30);
       if(!list.length){ stateEl.textContent = on ? "NO SIGNAL" : "OFF"; return; }
       const n = list.length;
       STATIONS = list.map((s,i)=>({
         name: (s.name||"Station").trim().replace(/\s+/g," ").slice(0,22),
         freq: +(FMIN + (FMAX-FMIN)*(n===1?0.5:i/(n-1))).toFixed(1),
-        url:  s.url_resolved || s.url
+        url:  s.url
       }));
       idx = 0; buildStationSelect(); snapTo(0, {play:on});
       stnName.textContent = STATIONS[0].name;
@@ -549,7 +557,9 @@
     stateEl.textContent = "OFF";
   }
   init();
-  loadCountries();   // populate the country dropdown (curated Sri Lanka list shows immediately)
+  // populate the country dropdown, then load the default country's stations
+  // (this also swaps the curated http fallback list for protocol-correct streams).
+  loadCountries().then(()=> loadStations(countrySel.value));
 })();
 </script>
 </body>
