@@ -20,7 +20,7 @@
     margin:0; font-family:"Helvetica Neue",Arial,sans-serif;
     background:radial-gradient(120% 120% at 50% 0%, #f4f1ea 0%, var(--page-1) 40%, var(--page-2) 100%);
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    min-height:100vh; min-height:100dvh; padding:40px 16px; color:#2a1c10; overflow-x:hidden;
+    min-height:100vh; min-height:100dvh; padding:40px 16px 92px; color:#2a1c10; overflow-x:hidden;
   }
 
   /* ============ DEVICE ============ */
@@ -194,44 +194,85 @@
   webaudio-knob, webaudio-switch { position:relative; z-index:2; display:block; }
 
   .kwrap.pw{ position:relative; }
-  .pmark{ position:absolute; top:-1px; font-size:8px; font-weight:800; letter-spacing:.5px; color:#7a4715; text-shadow:0 1px 0 rgba(255,255,255,.5); pointer-events:none; }
+  .pmark{ display:none; }   /* OFF / ON labels hidden */
   .pmark.off{ left:6px; }
   .pmark.on{ right:8px; color:#8a2f24; }
   .radio.on .pmark.on{ color:var(--red); text-shadow:0 0 6px rgba(230,56,43,.55), 0 1px 0 rgba(255,255,255,.4); }
 
-  .controls{ margin-top:28px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center; }
-  .controls .lbl{ font:800 10px "Helvetica Neue",Arial; letter-spacing:2px; color:#7a4715; text-shadow:0 1px 0 rgba(255,255,255,.4); }
-  #country, #station{
-    appearance:none; -webkit-appearance:none;
-    font:700 12px "Helvetica Neue",Arial; color:#5a3a12; letter-spacing:.3px;
-    padding:8px 32px 8px 13px; border-radius:9px; border:1px solid rgba(120,70,20,.35);
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235a3a12'/%3E%3C/svg%3E"), linear-gradient(#f7dcae,#e6b46c);
-    background-repeat:no-repeat, no-repeat; background-position:right 12px center, center;
-    box-shadow:0 1px 0 rgba(255,255,255,.65) inset, 0 2px 3px rgba(90,45,10,.22); cursor:pointer; max-width:250px;
-  }
-  #country:hover, #station:hover{ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235a3a12'/%3E%3C/svg%3E"), linear-gradient(#fbe3ba,#ecbe78); }
+  /* ---- bamboo-wood tray holding the two dropdowns ---- */
+  .controls{ margin-top:26px; display:flex; align-items:center; gap:18px; justify-content:space-between;
+    width:600px; max-width:94vw; box-sizing:border-box;   /* match the radio's width */
+    padding:12px 18px; border-radius:16px;
+    background:
+      repeating-linear-gradient(90deg, rgba(120,85,40,.045) 0 2px, rgba(255,244,210,.05) 2px 5px),
+      linear-gradient(#e7d0a3, #d6ba82 52%, #c4a568);
+    border:1px solid rgba(120,85,40,.4);
+    box-shadow:0 1px 0 rgba(255,248,225,.6) inset, 0 -3px 9px rgba(120,80,35,.3) inset,
+               0 12px 26px rgba(90,60,20,.3), 0 1px 0 rgba(255,255,255,.25); }
+  .ctrl{ display:flex; align-items:center; gap:9px; flex:1 1 0; min-width:0; }
+  .ctrl .dd{ flex:1 1 auto; min-width:0; }
+  .controls .lbl{ font:800 10px "Helvetica Neue",Arial; letter-spacing:2px; color:#6b4a1e; text-shadow:0 1px 0 rgba(255,246,218,.55); }
 
-  .hint{ margin-top:20px; font-size:12.5px; color:#8a6a45; text-align:center; max-width:600px; line-height:1.6 }
-  .hint b{ color:#6b4416 }
+  /* custom dropdown (button + materialistic list) */
+  .dd{ position:relative; }
+  .dd-btn{ appearance:none; border:1px solid rgba(120,85,40,.35); cursor:pointer;
+    font:700 12px "Helvetica Neue",Arial; color:#4a3212; letter-spacing:.3px;
+    display:flex; align-items:center; gap:10px; justify-content:space-between;
+    min-width:0; width:100%; padding:8px 12px; border-radius:9px;
+    background:linear-gradient(#fbf1d6, #ecd7a5 55%, #e1c78d);
+    box-shadow:0 1px 0 rgba(255,255,255,.75) inset, 0 -2px 4px rgba(120,80,35,.3) inset, 0 2px 3px rgba(90,60,20,.25); }
+  .dd-btn:hover{ background:linear-gradient(#fff7e0,#f0dcab 55%,#e6cd93); }
+  .dd-label{ overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+  .dd-caret{ width:0; height:0; flex:none; border-left:5px solid transparent; border-right:5px solid transparent;
+    border-top:6px solid #6b4a1e; transition:transform .18s ease; }
+  .dd.open .dd-caret{ transform:rotate(180deg); }
+
+  .dd-list{ position:absolute; top:calc(100% + 7px); left:0; min-width:100%; max-width:290px; width:max-content;
+    max-height:300px; overflow-y:auto; z-index:60; padding:5px; border-radius:12px;
+    background:linear-gradient(#fdf6e6,#f3e6c7);
+    border:1px solid rgba(120,85,40,.3);
+    box-shadow:0 1px 0 rgba(255,255,255,.85) inset, 0 20px 44px rgba(70,45,15,.38), 0 3px 10px rgba(70,45,15,.22); }
+  .dd-list[hidden]{ display:none; }
+  .dd.up .dd-list{ top:auto; bottom:calc(100% + 7px); }   /* flip above the button when low on screen */
+  .dd-opt{ padding:8px 12px; border-radius:8px; font:600 12.5px "Helvetica Neue",Arial; color:#4a3212;
+    cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:background .1s, color .1s; }
+  .dd-opt:hover, .dd-opt.hl{ background:linear-gradient(#e9b968,#d89f45); color:#3a2410; }
+  .dd-opt.sel{ background:linear-gradient(#d0a862,#bd914b); color:#3a2410; font-weight:800; }
+  .dd-opt.sel::after{ content:"✓"; float:right; margin-left:12px; opacity:.85; }
+  .dd-list::-webkit-scrollbar{ width:11px; }
+  .dd-list::-webkit-scrollbar-thumb{ background:rgba(120,85,40,.45); border-radius:6px; border:3px solid transparent; background-clip:padding-box; }
+  .dd-list::-webkit-scrollbar-track{ background:transparent; }
+
+  /* ---- pinned footer (hint + credit) ---- */
+  .footer{ position:fixed; left:0; right:0; bottom:0; z-index:40; padding:9px 16px 11px; text-align:center;
+    background:linear-gradient(rgba(233,229,219,0), rgba(232,227,215,.94) 45%); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); }
+  .footer .hint{ margin:0 auto; font-size:12px; color:#8a6a45; max-width:660px; line-height:1.5; }
+  .footer .hint b{ color:#6b4416; }
+  .footer .credit{ margin:3px auto 0; font-size:10.5px; letter-spacing:.3px; color:#a2896a; }
   audio{ display:none }
 
   /* ---- responsive ---- */
   /* small tablets / large phones: scale the full two-column radio to fit */
-  @media (max-width:660px) and (min-width:621px){ .stage{ zoom:0.9; } body{ padding:24px 12px; } }
+  @media (max-width:660px) and (min-width:621px){ .stage{ zoom:0.9; } body{ padding:24px 12px; }
+    .controls{ width:540px; } }   /* match the zoomed radio's rendered width */
 
-  /* phones: hide the speaker grille, show a compact single-column panel radio
-     with a RETRO FM header badge (the grille badge is hidden with the grille). */
+  /* phones: single-column radio with the speaker grille reduced to a short
+     strip across the top, RETRO FM badge sitting on it. */
   @media (max-width:620px){
     body{ padding:9vh 12px 24px; }   /* centered, nudged a touch lower on tall phones */
     .radio{ width:min(360px, 92vw); aspect-ratio:auto; grid-template-columns:1fr; padding:16px; border-radius:34px; }
-    .grille{ display:none; }
-    .plate.plate-m{ display:flex; position:static; left:auto; bottom:auto; margin:2px auto 12px; }
+    .plate-m{ display:none; }
+    /* grille becomes a slim horizontal speaker strip at the top */
+    .grille{ display:block; height:56px; margin:0 0 12px; border-radius:16px; }
+    .holes{ inset:9px; background-size:16px 16px; }
+    .glow{ border-radius:12px; }
+    .plate{ left:50%; top:50%; bottom:auto; transform:translate(-50%,-50%); }
     .panel{ padding:14px 14px 16px; }
     .tuner{ width:100%; max-width:230px; }
     .screen{ width:100%; max-width:210px; }
-    #country, #station{ max-width:min(260px, 82vw); }
-    .controls{ margin-top:22px; gap:8px; }
-    .hint{ font-size:12px; }
+    .controls{ margin-top:22px; gap:10px 14px; flex-direction:column; width:min(360px, 92vw); padding:12px 14px; }
+    .ctrl{ width:100%; flex:none; }
+    .footer .hint{ font-size:11.5px; }
   }
   @media (prefers-reduced-motion:reduce){ *{animation:none!important; transition-duration:.01ms!important} }
 </style>
@@ -276,8 +317,6 @@
             <span class="klabel">VOL</span>
           </div>
           <div class="kwrap pw">
-            <span class="pmark off">OFF</span>
-            <span class="pmark on">ON</span>
             <div class="collar">
               <webaudio-switch id="power" type="toggle" src="redbutton128.png"
                                diameter="70" value="0"></webaudio-switch>
@@ -290,18 +329,23 @@
   </div>
 
   <div class="controls">
-    <span class="lbl">COUNTRY</span>
-    <select id="country" aria-label="Select country">
-      <option value="LK">Sri Lanka</option>
-    </select>
-    <span class="lbl" id="stationLbl">STATION</span>
-    <select id="station" aria-label="Select station"></select>
+    <div class="ctrl">
+      <span class="lbl">COUNTRY</span>
+      <div class="dd" id="countryDD"></div>
+    </div>
+    <div class="ctrl">
+      <span class="lbl" id="stationLbl">STATION</span>
+      <div class="dd" id="stationDD"></div>
+    </div>
   </div>
 
-  <p class="hint">
-    Pick a <b>country</b>, then a station · twist <b>POWER</b> to switch on ·
-    turn the big <b>tuning</b> knob to change station · <b>VOL</b> for volume.
-  </p>
+  <footer class="footer">
+    <p class="hint">
+      Pick a <b>country</b>, then a station · twist <b>POWER</b> to switch on ·
+      slide the <b>tuning</b> dial to change station · <b>VOL</b> for volume.
+    </p>
+    <p class="credit">Crafted by Thimira Dulakshitha, with the support of AI tools.</p>
+  </footer>
 
   <audio id="player"></audio>
 
@@ -422,21 +466,71 @@
     if(e.key==="ArrowLeft" ||e.key==="ArrowDown"){ e.preventDefault(); snapTo(Math.max(idx-1, 0)); }
   });
 
-  const countrySel = document.getElementById("country");
-  const stationSel = document.getElementById("station");
   const stationLbl = document.getElementById("stationLbl");
   const API = "https://de1.api.radio-browser.info/json";
 
-  function buildStationSelect(){
-    stationSel.innerHTML = STATIONS.map((s,i)=>`<option value="${i}">${s.name}</option>`).join("");
-    stationSel.value = String(idx);
-    if(stationLbl) stationLbl.textContent = `STATION (${STATIONS.length})`;
+  /* ---- custom skeuomorphic dropdown (native <select> popups can't be styled) ---- */
+  function makeDropdown(host, onChange){
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "dd-btn";
+    btn.setAttribute("aria-haspopup","listbox"); btn.setAttribute("aria-expanded","false");
+    const label = document.createElement("span"); label.className = "dd-label";
+    const caret = document.createElement("span"); caret.className = "dd-caret";
+    btn.append(label, caret);
+    const list = document.createElement("div");
+    list.className = "dd-list"; list.setAttribute("role","listbox"); list.hidden = true;
+    host.append(btn, list);
+
+    let items = [], value = null, ph = "";
+    const sync = () => { const it = items.find(i=>i.value===value); label.textContent = it ? it.label : ph;
+      [...list.children].forEach(o=>o.classList.toggle("sel", o.dataset.value===String(value))); };
+    const render = () => { list.innerHTML = "";
+      items.forEach(it=>{ const o=document.createElement("div"); o.className="dd-opt"; o.setAttribute("role","option");
+        o.dataset.value = it.value; o.textContent = it.label;
+        o.addEventListener("click", ()=>{ value=it.value; sync(); close(); onChange && onChange(it.value); });
+        list.append(o); }); sync(); };
+    const open = () => { if(!list.hidden) return; list.hidden=false; host.classList.add("open");
+      btn.setAttribute("aria-expanded","true");
+      const r=btn.getBoundingClientRect();
+      host.classList.toggle("up", (innerHeight - r.bottom) < 320 && r.top > 320);   // flip up if no room below
+      const s=list.querySelector(".dd-opt.sel"); (s||list.firstChild)?.scrollIntoView({block:"nearest"});
+      document.addEventListener("pointerdown", outside, true); document.addEventListener("keydown", onKey, true); };
+    const close = () => { if(list.hidden) return; list.hidden=true; host.classList.remove("open");
+      btn.setAttribute("aria-expanded","false");
+      list.querySelector(".dd-opt.hl")?.classList.remove("hl");
+      document.removeEventListener("pointerdown", outside, true); document.removeEventListener("keydown", onKey, true); };
+    const outside = e => { if(!host.contains(e.target)) close(); };
+    const onKey = e => {
+      const opts=[...list.children]; let i=opts.findIndex(o=>o.classList.contains("hl"));
+      if(e.key==="Escape"){ close(); btn.focus(); }
+      else if(e.key==="ArrowDown"){ e.preventDefault(); i=Math.min(opts.length-1, i+1); highlight(opts,i); }
+      else if(e.key==="ArrowUp"){ e.preventDefault(); i=Math.max(0, i<0?0:i-1); highlight(opts,i); }
+      else if(e.key==="Enter"){ e.preventDefault(); (opts[i]||list.querySelector(".dd-opt.sel"))?.click(); }
+    };
+    const highlight = (opts,i)=>{ opts.forEach(o=>o.classList.remove("hl")); if(opts[i]){ opts[i].classList.add("hl"); opts[i].scrollIntoView({block:"nearest"}); } };
+    btn.addEventListener("click", ()=> list.hidden ? open() : close());
+
+    return {
+      set(arr){ items=arr; render(); },
+      value(v){ if(v===undefined) return value; value=v; sync(); },
+      placeholder(t){ ph=t; sync(); }
+    };
   }
-  stationSel.addEventListener("change", ()=>{
-    const i = +stationSel.value; if(Number.isNaN(i)) return;
+
+  const countryDD = makeDropdown(document.getElementById("countryDD"), v => loadStations(v));
+  const stationDD = makeDropdown(document.getElementById("stationDD"), v => {
+    const i = +v; if(Number.isNaN(i)) return;
     if(!on) setPower(true, {play:false});
     snapTo(i);
   });
+  countryDD.placeholder("Sri Lanka"); countryDD.set([{value:"LK", label:"Sri Lanka"}]); countryDD.value("LK");
+  stationDD.placeholder("—");
+
+  function buildStationSelect(){
+    stationDD.set(STATIONS.map((s,i)=>({value:String(i), label:s.name})));
+    stationDD.value(String(idx));
+    if(stationLbl) stationLbl.textContent = `STATION (${STATIONS.length})`;
+  }
 
   // fill the country dropdown from Radio Browser
   async function loadCountries(){
@@ -444,9 +538,9 @@
       const r = await fetch(API + "/countries");
       let list = (await r.json()).filter(c=>c.iso_3166_1 && c.stationcount>0)
                                  .sort((a,b)=>a.name.localeCompare(b.name));
-      countrySel.innerHTML = list.map(c=>`<option value="${c.iso_3166_1}">${c.name} (${c.stationcount})</option>`).join("");
-      countrySel.value = "LK";
-    }catch(e){ /* offline — keep the single default option */ }
+      countryDD.set(list.map(c=>({value:c.iso_3166_1, label:`${c.name} (${c.stationcount})`})));
+      countryDD.value("LK");
+    }catch(e){ /* offline — keep the default option */ }
   }
 
   // when the page itself is served over https (e.g. GitHub Pages), browsers block
@@ -481,11 +575,9 @@
       if(!on) stateEl.textContent = "OFF";
     }catch(e){ stateEl.textContent = on ? "NO SIGNAL" : "OFF"; }
   }
-  countrySel.addEventListener("change", ()=> loadStations(countrySel.value));
-
   // keep the STATION dropdown selection in sync with the current station
   function updatePresets(){
-    if(stationSel && stationSel.value !== String(idx)) stationSel.value = String(idx);
+    if(stationDD.value() !== String(idx)) stationDD.value(String(idx));
   }
 
   vol.addEventListener("input", (e) => {
@@ -507,12 +599,10 @@
     if(on){ stateEl.textContent="ON"; if(play) playCurrent(); }
     else { stateEl.textContent="OFF"; radio.classList.remove("playing"); player.pause(); }
   }
-  /* webaudio-switch fires 'click' on toggle */
-  power.addEventListener("click", () => {
-    setPower(!on);
-  });
+  /* webaudio-switch toggles on click; the button lights up red when on */
+  power.addEventListener("click", () => setPower(!on));
   power.addEventListener("keydown", e => {
-    if(e.key==" "||e.key==="Enter"){ e.preventDefault(); setPower(!on); }
+    if(e.key===" "||e.key==="Enter"){ e.preventDefault(); setPower(!on); }
   });
 
   function playCurrent(){
@@ -540,7 +630,7 @@
   init();
   // populate the country dropdown, then load the default country's stations
   // (this also swaps the curated http fallback list for protocol-correct streams).
-  loadCountries().then(()=> loadStations(countrySel.value));
+  loadCountries().then(()=> loadStations(countryDD.value()));
 })();
 </script>
 </body>
