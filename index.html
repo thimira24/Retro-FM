@@ -627,12 +627,90 @@
       box-shadow: 0 1px 2px rgba(0, 0, 0, .45) inset, 0 1px 1px rgba(255, 255, 255, .55);
     }
 
-    /* no ::after black disc — the webaudio components handle their own backgrounds */
-    webaudio-knob,
-    webaudio-switch {
+    /* pure-CSS knobs (reliable, no external library) sit inside the metal collar */
+    .knob-body {
       position: relative;
       z-index: 2;
-      display: block;
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      cursor: grab;
+      touch-action: none;
+      background: radial-gradient(circle at 50% 30%, #66666e 0%, #3b3b41 55%, #1c1c20 100%);
+      box-shadow: 0 2px 3px rgba(255, 255, 255, .16) inset, 0 -5px 10px rgba(0, 0, 0, .6) inset,
+        0 4px 8px rgba(0, 0, 0, .5);
+    }
+
+    .knob-body::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: repeating-conic-gradient(from 0deg, rgba(255, 255, 255, .13) 0 2.4deg, rgba(0, 0, 0, .36) 2.4deg 4.8deg);
+      -webkit-mask: radial-gradient(circle, transparent 52%, #000 53% 91%, transparent 92%);
+      mask: radial-gradient(circle, transparent 52%, #000 53% 91%, transparent 92%);
+    }
+
+    .knob-body::after {
+      content: "";
+      position: absolute;
+      inset: 13px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 42% 30%, #71717a 0%, #34343a 58%, #17171a 100%);
+      box-shadow: 0 2px 3px rgba(255, 255, 255, .16) inset, 0 -3px 6px rgba(0, 0, 0, .6) inset;
+    }
+
+    .knob-body .ind {
+      position: absolute;
+      left: 50%;
+      top: 6px;
+      width: 3px;
+      height: 15px;
+      transform: translateX(-50%);
+      border-radius: 2px;
+      z-index: 3;
+      background: linear-gradient(#f5e9c9, #c9b483);
+      box-shadow: 0 0 4px rgba(255, 220, 150, .5);
+    }
+
+    .knob-body:active {
+      cursor: grabbing;
+    }
+
+    /* POWER — a red push-button that lights up when the radio is on */
+    .pbtn {
+      position: relative;
+      z-index: 2;
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      cursor: pointer;
+      background: radial-gradient(circle at 42% 32%, #5c1613, #2c0907 68%, #180402);
+      box-shadow: 0 2px 3px rgba(255, 255, 255, .12) inset, 0 -4px 8px rgba(0, 0, 0, .6) inset,
+        0 3px 6px rgba(0, 0, 0, .5);
+      transition: background .3s ease, box-shadow .3s ease;
+    }
+
+    .pbtn::after {
+      content: "";
+      position: absolute;
+      top: 9px;
+      left: 16px;
+      width: 20px;
+      height: 12px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 40% 35%, rgba(255, 255, 255, .5), transparent 70%);
+      pointer-events: none;
+    }
+
+    .radio.on .pbtn {
+      background: radial-gradient(circle at 42% 32%, #ff7565, #e6382b 55%, #8b1109);
+      box-shadow: 0 0 14px var(--red-glow), 0 0 28px rgba(230, 56, 43, .7),
+        0 2px 3px rgba(255, 220, 210, .5) inset, 0 -3px 7px rgba(120, 10, 6, .6) inset;
+    }
+
+    .pbtn:active {
+      transform: scale(.97);
     }
 
     .kwrap.pw {
@@ -958,7 +1036,6 @@
       }
     }
   </style>
-  <script src="webaudio-controls.js"></script>
 </head>
 
 <body>
@@ -994,15 +1071,13 @@
         <div class="knobs">
           <div class="kwrap">
             <div class="collar">
-              <webaudio-knob id="vol" min="0" max="100" value="80" diameter="70" src="Vintage_Knob.png" sprites="100"
-                tooltip="Volume: %d"></webaudio-knob>
+              <div class="knob-body" id="vol" role="slider" aria-label="Volume" aria-valuemin="0" aria-valuemax="100" tabindex="0"><span class="ind"></span></div>
             </div>
             <span class="klabel">VOL</span>
           </div>
           <div class="kwrap pw">
             <div class="collar">
-              <webaudio-switch id="power" type="toggle" src="redbutton128.png" diameter="70"
-                value="0"></webaudio-switch>
+              <div class="pbtn" id="power" role="switch" aria-label="Power" tabindex="0"></div>
             </div>
             <span class="klabel">POWER</span>
           </div>
@@ -1272,30 +1347,71 @@
         if (stationDD.value() !== String(idx)) stationDD.value(String(idx));
       }
 
-      vol.addEventListener("input", (e) => {
-        volume = +e.target.value / 100;
+      /* VOL — a draggable knob (grab & turn); rotation maps to 0..100% */
+      let volAngle = -135 + volume * 270;
+      function applyVol(a) {
+        volAngle = a;
+        vol.style.transform = `rotate(${a}deg)`;
+        volume = (a + 135) / 270;
         player.volume = volume;
-        if (Math.abs(+e.target.value - lastVolValue) >= 5) {
-          lastVolValue = +e.target.value;
-          sfxTick();
-        }
-      });
+        vol.setAttribute("aria-valuenow", Math.round(volume * 100));
+        if (Math.abs(volume * 100 - lastVolValue) >= 5) { lastVolValue = volume * 100; sfxTick(); }
+      }
+      (function () {
+        let dragging = false, startPtr = 0, startVal = 0;
+        const center = () => { const r = vol.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; };
+        const ptrAng = e => { const c = center(); return Math.atan2(e.clientY - c.y, e.clientX - c.x) * 180 / Math.PI; };
+        const norm = d => { while (d > 180) d -= 360; while (d < -180) d += 360; return d; };
+        vol.addEventListener("pointerdown", e => { dragging = true; startPtr = ptrAng(e); startVal = volAngle; vol.setPointerCapture?.(e.pointerId); e.preventDefault(); });
+        window.addEventListener("pointermove", e => { if (!dragging) return; let v = startVal + norm(ptrAng(e) - startPtr); v = Math.max(-135, Math.min(135, v)); applyVol(v); });
+        window.addEventListener("pointerup", () => { dragging = false; });
+        vol.addEventListener("keydown", e => {
+          if (e.key === "ArrowRight" || e.key === "ArrowUp") { e.preventDefault(); applyVol(Math.min(135, volAngle + 14)); }
+          if (e.key === "ArrowLeft" || e.key === "ArrowDown") { e.preventDefault(); applyVol(Math.max(-135, volAngle - 14)); }
+        });
+      })();
 
       function setPower(state, { play = true } = {}) {
         const was = on;
         on = state;
-        power.value = on ? 1 : 0;
         radio.classList.toggle("on", on);
         if (state && !was) sfxPowerOn();
         else if (!state && was) sfxPowerOff();
         if (on) { stateEl.textContent = "ON"; if (play) playCurrent(); }
-        else { stateEl.textContent = "OFF"; radio.classList.remove("playing"); player.pause(); }
+        else { stateEl.textContent = "OFF"; radio.classList.remove("playing"); player.pause(); monitorStop(); }
       }
-      /* webaudio-switch toggles on click; the button lights up red when on */
+      /* POWER button toggles on click; it lights up red when on */
       power.addEventListener("click", () => setPower(!on));
       power.addEventListener("keydown", e => {
         if (e.key === " " || e.key === "Enter") { e.preventDefault(); setPower(!on); }
       });
+
+      /* ---- watchdog: live streams often drop after a few minutes; auto-reconnect ---- */
+      let watchdog = null, lastT = 0, lastAdvance = 0, retryCount = 0;
+      function monitorStart() {
+        lastT = 0; lastAdvance = Date.now(); retryCount = 0;
+        clearInterval(watchdog);
+        watchdog = setInterval(() => {
+          if (!on) return;
+          if (player.currentTime > lastT + 0.05) {            // audio is actually advancing → healthy
+            lastT = player.currentTime; lastAdvance = Date.now(); retryCount = 0;
+            if (!radio.classList.contains("playing")) { radio.classList.add("playing"); stateEl.textContent = "LIVE"; }
+          } else if (Date.now() - lastAdvance > 6500) {        // no progress for 6.5s → stream stalled, reconnect
+            reconnect();
+          }
+        }, 2000);
+      }
+      function monitorStop() { clearInterval(watchdog); watchdog = null; }
+      function reconnect() {
+        if (!on) return;
+        radio.classList.remove("playing");                    // stop the equalizer while there's no audio
+        stateEl.textContent = "…";
+        if (++retryCount > 6) { stateEl.textContent = "NO SIGNAL"; monitorStop(); return; }
+        try { player.load(); } catch (e) { }
+        player.src = streamSrc(STATIONS[idx].url); player.volume = volume;
+        player.play().catch(() => { });
+        lastT = 0; lastAdvance = Date.now();
+      }
 
       function playCurrent() {
         const s = STATIONS[idx];
@@ -1305,11 +1421,13 @@
         player.src = streamSrc(s.url); player.volume = volume;
         const p = player.play();
         if (p) p.catch(() => { stateEl.textContent = "NO SIGNAL"; });
+        monitorStart();
       }
-      player.addEventListener("playing", () => { if (on) { stateEl.textContent = "LIVE"; radio.classList.add("playing"); } });
-      player.addEventListener("waiting", () => { if (on) stateEl.textContent = "TUNING"; });
-      player.addEventListener("error", () => { if (on) { stateEl.textContent = "NO SIGNAL"; radio.classList.remove("playing"); } });
-      player.addEventListener("stalled", () => { if (on) stateEl.textContent = "…"; });
+      player.addEventListener("playing", () => { if (on) { stateEl.textContent = "LIVE"; radio.classList.add("playing"); lastT = player.currentTime; lastAdvance = Date.now(); retryCount = 0; } });
+      player.addEventListener("waiting", () => { if (on) { stateEl.textContent = "…"; radio.classList.remove("playing"); } });
+      player.addEventListener("stalled", () => { if (on) radio.classList.remove("playing"); });
+      player.addEventListener("ended", () => { if (on) reconnect(); });
+      player.addEventListener("error", () => { if (on) reconnect(); });   // retry rather than give up
 
       /* ---- realistic speaker-grille texture: one drilled hole, tiled ---- */
       function buildGrille() {
@@ -1339,7 +1457,7 @@
         buildGrille();
         buildScale();
         buildStationSelect();
-        vol.value = Math.round(volume * 100);
+        applyVol(volAngle);
         snapTo(0, { play: false });
         stnName.textContent = STATIONS[0].name;
         stateEl.textContent = "OFF";
