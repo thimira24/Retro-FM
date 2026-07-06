@@ -14,6 +14,14 @@
   <link rel="canonical" href="https://retro-fm.vercel.app/" />
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 
+  <!-- PWA (installable "Add to Home Screen") -->
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Retro FM" />
+
   <!-- Open Graph (Facebook, LinkedIn, etc.) -->
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Retro FM" />
@@ -931,6 +939,80 @@
       color: #a2896a;
     }
 
+    /* ---- "Add to Home Screen" install button + iOS hint ---- */
+    .install {
+      position: fixed;
+      top: 14px;
+      right: 14px;
+      z-index: 80;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font: 800 12px "Helvetica Neue", Arial;
+      letter-spacing: .4px;
+      color: #4a3212;
+      cursor: pointer;
+      padding: 9px 15px;
+      border-radius: 11px;
+      border: 1px solid rgba(120, 85, 40, .4);
+      background: linear-gradient(#fbeccf, #e9c67f);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, .7) inset, 0 4px 12px rgba(90, 60, 20, .28);
+      animation: instIn .4s ease;
+    }
+
+    .install::before {
+      content: "⬇";
+      font-size: 13px;
+    }
+
+    .install:hover {
+      background: linear-gradient(#fff6df, #eecd8b);
+    }
+
+    .install:active {
+      transform: translateY(1px);
+    }
+
+    @keyframes instIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; }
+    }
+
+    .ioshint {
+      position: fixed;
+      left: 12px;
+      right: 12px;
+      bottom: 62px;
+      z-index: 80;
+      max-width: 360px;
+      margin: 0 auto;
+      padding: 12px 40px 12px 15px;
+      border-radius: 14px;
+      background: rgba(255, 251, 244, .97);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(120, 85, 40, .25);
+      box-shadow: 0 14px 34px rgba(70, 45, 15, .25);
+      font: 600 13px "Helvetica Neue", Arial;
+      color: #5a4326;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .ioshint b { color: #7a4715; }
+
+    .ioshint-x {
+      position: absolute;
+      top: 6px;
+      right: 10px;
+      border: none;
+      background: none;
+      font-size: 21px;
+      line-height: 1;
+      color: #8a6a45;
+      cursor: pointer;
+    }
+
     audio {
       display: none
     }
@@ -1100,6 +1182,12 @@
   <footer class="footer">
     <p class="credit">Crafted by Thimira Dulakshitha, with the support of AI tools.</p>
   </footer>
+
+  <button id="installBtn" class="install" type="button" hidden>Install app</button>
+  <div id="iosHint" class="ioshint" hidden>
+    <span>Install <b>Retro FM</b>: tap <b>Share</b> then <b>“Add to Home Screen.”</b></span>
+    <button id="iosClose" class="ioshint-x" type="button" aria-label="Close">×</button>
+  </div>
 
   <audio id="player"></audio>
 
@@ -1466,6 +1554,37 @@
       // populate the country dropdown, then load the default country's stations
       // (this also swaps the curated http fallback list for protocol-correct streams).
       loadCountries().then(() => loadStations(countryDD.value()));
+    })();
+  </script>
+  <script>
+    /* ---- PWA: service worker + custom "Add to Home Screen" prompt ---- */
+    (() => {
+      if ("serviceWorker" in navigator) {
+        addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+      }
+      const btn = document.getElementById("installBtn");
+      const iosHint = document.getElementById("iosHint");
+      const iosClose = document.getElementById("iosClose");
+      const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      if (standalone) return;                 // already installed → don't nag
+
+      let deferred = null;
+      addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferred = e; btn.hidden = false; });
+      addEventListener("appinstalled", () => { btn.hidden = true; iosHint.hidden = true; deferred = null; });
+
+      btn.addEventListener("click", async () => {
+        if (deferred) {                        // Android / desktop Chrome & Edge
+          deferred.prompt();
+          await deferred.userChoice.catch(() => {});
+          deferred = null; btn.hidden = true;
+        } else if (isIOS) {                    // iOS Safari has no install API
+          iosHint.hidden = false;
+        }
+      });
+      iosClose.addEventListener("click", () => { iosHint.hidden = true; });
+
+      if (isIOS) btn.hidden = false;           // give iOS users an entry point to the instructions
     })();
   </script>
 </body>

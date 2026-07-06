@@ -1,0 +1,16 @@
+{
+  "name": "Retro FM — Online Radio",
+  "short_name": "Retro FM",
+  "description": "A vintage-style web radio. Listen to live stations from 240+ countries.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#e9e6df",
+  "theme_color": "#e29a4f",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
