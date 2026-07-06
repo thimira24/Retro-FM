@@ -1,10 +1,10 @@
-/* Retro FM service worker — required for installability; caches the app shell
-   so it opens offline. The radio API and audio streams are never cached. */
-const CACHE = "retro-fm-v1";
-const SHELL = ["./", "index.html", "favicon.svg", "manifest.json", "icon-192.png", "icon-512.png"];
+/* Retro FM service worker — enables offline use.
+   Network-first for the app shell so updates always reach users when online,
+   falling back to the cache when offline. The radio API and audio streams are
+   never intercepted. */
+const CACHE = "retro-fm-v2";
 
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).catch(() => {}));
   self.skipWaiting();
 });
 
@@ -19,9 +19,14 @@ self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
-  // Only handle same-origin app-shell requests (cache-first, fall back to network).
-  // Cross-origin requests (Radio Browser API, audio streams) go straight to the network.
-  if (url.origin === location.origin) {
-    e.respondWith(caches.match(req).then((cached) => cached || fetch(req)));
-  }
+  if (url.origin !== location.origin) return;   // Radio Browser API + audio streams → straight to network
+  e.respondWith(
+    fetch(req)
+      .then((res) => {
+        const copy = res.clone();
+        caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
+        return res;
+      })
+      .catch(() => caches.match(req))            // offline → serve last-cached copy
+  );
 });
