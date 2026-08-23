@@ -1071,7 +1071,6 @@
         <div class="screen">
           <div class="stn" id="stnName">— — —</div>
           <div class="row">
-            <span class="freq" id="freq">88.8 MHz</span>
             <span class="eq"><i></i><i></i><i></i><i></i><i></i></span>
             <span class="state" id="state">OFF</span>
           </div>
@@ -1133,7 +1132,6 @@
       const vol = document.getElementById("vol");
       const power = document.getElementById("power");
       const stnName = document.getElementById("stnName");
-      const freqEl = document.getElementById("freq");
       const stateEl = document.getElementById("state");
 
       let on = false, idx = 0, volume = 0.8, lastTuneNs = -1, lastVolValue = 80;
@@ -1184,18 +1182,14 @@
         let svg = "";
         for (let f = FMIN; f <= FMAX; f++) {
           const x = xOf(f), major = (f % 2 === 0);
-          svg += `<line x1="${x.toFixed(1)}" y1="5" x2="${x.toFixed(1)}" y2="${major ? 18 : 12}"
+          svg += `<line x1="${x.toFixed(1)}" y1="${major ? 13 : 17}" x2="${x.toFixed(1)}" y2="${major ? 35 : 31}"
               stroke="#6b3d12" stroke-width="${major ? 1.4 : 0.8}" opacity="${major ? .85 : .5}"/>`;
         }
-        [88, 92, 96, 100, 104, 108].forEach(f => {
-          svg += `<text class="ticknum" x="${xOf(f).toFixed(1)}" y="34" text-anchor="middle">${f}</text>`;
-        });
-        ticksSvg.innerHTML = svg;
+        ticksSvg.innerHTML = svg;   // no numeric labels — internet streams have no real frequency
       }
       function setNeedle(f, animate) {
         needle.style.transition = animate ? "left .4s cubic-bezier(.2,.8,.2,1)" : "left 0s";
         needle.style.left = (xOf(f) / SW * 100).toFixed(2) + "%";
-        freqEl.textContent = f.toFixed(1) + " MHz";
         track.setAttribute("aria-valuenow", f.toFixed(1));
       }
 
