@@ -1071,6 +1071,7 @@
         <div class="screen">
           <div class="stn" id="stnName">— — —</div>
           <div class="row">
+            <span class="freq" id="freq"></span>
             <span class="eq"><i></i><i></i><i></i><i></i><i></i></span>
             <span class="state" id="state">OFF</span>
           </div>
@@ -1115,16 +1116,40 @@
     (() => {
       "use strict";
 
+      // Sri Lanka defaults: freq = real Colombo FM frequency (source: Wikipedia).
+      // freqReal:true → the frequency is genuine and shown as a label.
       let STATIONS = [
-        { name: "Sirasa FM", freq: 88.8, url: "http://live.trusl.com:1170/;" },
-        { name: "Sooriyan FM", freq: 90.6, url: "https://radio.lotustechnologieslk.net:8006/" },
-        { name: "Gold FM", freq: 93.0, url: "https://radio.lotustechnologieslk.net:2020/stream/goldfmgarden" },
-        { name: "Hiru FM", freq: 96.1, url: "https://radio.lotustechnologieslk.net:2020/stream/hirufmgarden/stream/1/" },
-        { name: "Sun FM", freq: 99.7, url: "https://radio.lotustechnologieslk.net:2020/stream/sunfmgarden" },
-        { name: "Neth FM", freq: 105.0, url: "https://cp11.serverse.com/proxy/nethfm/stream" },
-        { name: "Sri FM", freq: 107.5, url: "http://207.148.74.192:7860/stream2.mp3" },
+        { name: "Sirasa FM", freq: 106.5, freqReal: true, url: "http://live.trusl.com:1170/;" },
+        { name: "Sooriyan FM", freq: 103.4, freqReal: true, url: "https://radio.lotustechnologieslk.net:8006/" },
+        { name: "Gold FM", freq: 93.0, freqReal: true, url: "https://radio.lotustechnologieslk.net:2020/stream/goldfmgarden" },
+        { name: "Hiru FM", freq: 96.1, freqReal: true, url: "https://radio.lotustechnologieslk.net:2020/stream/hirufmgarden/stream/1/" },
+        { name: "Sun FM", freq: 98.7, freqReal: true, url: "https://radio.lotustechnologieslk.net:2020/stream/sunfmgarden" },
+        { name: "Neth FM", freq: 94.8, freqReal: true, url: "https://cp11.serverse.com/proxy/nethfm/stream" },
+        { name: "Sri FM", freq: 100.0, freqReal: false, url: "http://207.148.74.192:7860/stream2.mp3" },
       ];
       const FMIN = 87, FMAX = 108;
+
+      // Pull a real FM frequency out of a station's own name/tags when the broadcaster
+      // included one (e.g. "Heart London 106.2", "Capital 95.8 FM"). Never invents a number.
+      function extractFreq(name, tags) {
+        const s = ((name || "") + " " + (tags || "")).toLowerCase();
+        const re = /(\d{2,3}(?:\.\d)?)\s*(fm|mhz)?/g;
+        let m;
+        while ((m = re.exec(s))) {
+          const v = parseFloat(m[1]);
+          if (v >= 87 && v <= 108 && (m[1].includes(".") || m[2])) return +v.toFixed(1);
+        }
+        return null;
+      }
+
+      // Known real Colombo FM frequencies for well-known Sri Lankan stations (source: Wikipedia),
+      // merged in by name since the API list carries no frequency.
+      const KNOWN_FREQ = { "sirasa fm": 106.5, "sooriyan fm": 103.4, "gold fm": 93.0, "hiru fm": 96.1, "sun fm": 98.7, "neth fm": 94.8 };
+      function knownFreq(name) {
+        const n = (name || "").toLowerCase().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
+        for (const k in KNOWN_FREQ) { if (n === k || n.startsWith(k + " ")) return KNOWN_FREQ[k]; }
+        return null;
+      }
 
       const radio = document.getElementById("radio");
       const player = document.getElementById("player");
@@ -1133,6 +1158,9 @@
       const power = document.getElementById("power");
       const stnName = document.getElementById("stnName");
       const stateEl = document.getElementById("state");
+      const freqEl = document.getElementById("freq");
+      // show a station's frequency ONLY when it's a real one (curated or extracted)
+      function showStationFreq(st) { freqEl.textContent = (st && st.freqReal) ? st.freq.toFixed(1) + " FM" : ""; }
 
       let on = false, idx = 0, volume = 0.8, lastTuneNs = -1, lastVolValue = 80;
 
@@ -1198,6 +1226,7 @@
         idx = i; const s = STATIONS[i];
         setNeedle(s.freq, true);
         stnName.textContent = s.name;
+        showStationFreq(s);
         lastTuneNs = i;
         updatePresets();
         tickIfLive();                 // click when selecting a station (silent until first interaction)
@@ -1216,6 +1245,7 @@
         setNeedle(f, false);
         const ns = nearestStation(f);
         stnName.textContent = STATIONS[ns].name;
+        showStationFreq(STATIONS[ns]);
         if (ns !== lastTuneNs) { lastTuneNs = ns; sfxTick(); }
       }
       track.addEventListener("pointerdown", e => { sliding = true; track.setPointerCapture(e.pointerId); slideTo(freqFromEvent(e)); e.preventDefault(); });
@@ -1329,17 +1359,21 @@
           stateEl.textContent = "…";
           const r = await fetch(`${API}/stations/bycountrycodeexact/${code}?hidebroken=true&order=clickcount&reverse=true&limit=80`);
           let list = (await r.json())
-            .map(s => ({ name: s.name, url: (s.url_resolved || s.url || "") }))
+            .map(s => ({ name: s.name, tags: s.tags, url: (s.url_resolved || s.url || "") }))
             .filter(s => s.url);
           if (httpsPage && !useProxy) list = list.filter(s => /^https:/i.test(s.url));   // no proxy → drop unplayable http streams
           list = list.slice(0, 30);
           if (!list.length) { stateEl.textContent = on ? "NO SIGNAL" : "OFF"; return; }
           const n = list.length;
-          STATIONS = list.map((s, i) => ({
-            name: (s.name || "Station").trim().replace(/\s+/g, " ").slice(0, 22),
-            freq: +(FMIN + (FMAX - FMIN) * (n === 1 ? 0.5 : i / (n - 1))).toFixed(1),
-            url: s.url
-          }));
+          STATIONS = list.map((s, i) => {
+            const real = extractFreq(s.name, s.tags) ?? knownFreq(s.name);   // real MHz from the name/tags, or a known station
+            return {
+              name: (s.name || "Station").trim().replace(/\s+/g, " ").slice(0, 22),
+              freq: real != null ? real : +(FMIN + (FMAX - FMIN) * (n === 1 ? 0.5 : i / (n - 1))).toFixed(1),
+              freqReal: real != null,
+              url: s.url
+            };
+          });
           idx = 0; buildStationSelect(); snapTo(0, { play: on });
           stnName.textContent = STATIONS[0].name;
           if (!on) stateEl.textContent = "OFF";
